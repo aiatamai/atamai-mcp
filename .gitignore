@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Misc
+.turbo/
+tmp/
+temp/

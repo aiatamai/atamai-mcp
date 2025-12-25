@@ -1,0 +1,123 @@
+
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: atamai_postgres_dev
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev123
+      POSTGRES_DB: atamai_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d atamai_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: atamai_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend-api:
+    build:
+      context: .
+      dockerfile: docker/backend-api.Dockerfile
+    container_name: atamai_backend_dev
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://dev:dev123@postgres:5432/atamai_dev
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-key-change-in-production
+      JWT_EXPIRATION: 24h
+      PORT: 5000
+      API_PREFIX: /api/v1
+      LOG_LEVEL: debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./packages/backend-api/src:/app/packages/backend-api/src
+    command: pnpm dev
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: docker/mcp-server.Dockerfile
+    container_name: atamai_mcp_server_dev
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      BACKEND_API_URL: http://backend-api:5000
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+      LOG_LEVEL: debug
+    depends_on:
+      - backend-api
+      - redis
+    volumes:
+      - ./packages/mcp-server/src:/app/packages/mcp-server/src
+    command: pnpm dev
+
+  crawler:
+    build:
+      context: .
+      dockerfile: docker/crawler.Dockerfile
+    container_name: atamai_crawler_dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://dev:dev123@postgres:5432/atamai_dev
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: debug
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./packages/crawler-engine/src:/app/packages/crawler-engine/src
+    command: pnpm dev
+
+  web-ui:
+    build:
+      context: .
+      dockerfile: docker/web-ui.Dockerfile
+    container_name: atamai_web_ui_dev
+    ports:
+      - "4000:3000"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:5000
+    depends_on:
+      - backend-api
+    volumes:
+      - ./packages/web-ui/src:/app/packages/web-ui/src
+      - ./packages/web-ui/public:/app/packages/web-ui/public
+    command: pnpm dev
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: atamai_network
