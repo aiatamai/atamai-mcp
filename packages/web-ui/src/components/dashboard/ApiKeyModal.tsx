@@ -35,7 +35,7 @@ export function ApiKeyModal({
 
     const result = await generateKey(keyName);
     if (result) {
-      setGeneratedKey(result.key || result);
+      setGeneratedKey(typeof result === 'string' ? result : (result as any)?.key || result);
       setStep('display');
       onKeyGenerated();
     } else {

@@ -1,5 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, TooManyRequestsException } from '@nestjs/common';
-import { Request } from 'express';
+import { Injectable, CanActivate, ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { RateLimitingService } from './rate-limiting.service';
 import { User } from '../../database/entities/user.entity';
 
@@ -12,7 +11,7 @@ export class RateLimitGuard implements CanActivate {
   constructor(private readonly rateLimitingService: RateLimitingService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<any>();
     const response = context.switchToHttp().getResponse();
 
     // Extract user from request (set by auth guards)
@@ -43,8 +42,9 @@ export class RateLimitGuard implements CanActivate {
     response.setHeader('X-RateLimit-Reset', result.resetAt.toISOString());
 
     if (!result.allowed) {
-      throw new TooManyRequestsException(
+      throw new HttpException(
         `Rate limit exceeded. Reset at ${result.resetAt.toISOString()}`,
+        HttpStatus.TOO_MANY_REQUESTS,
       );
     }
 
@@ -52,7 +52,7 @@ export class RateLimitGuard implements CanActivate {
   }
 
   private getRateLimitRpm(tier: string): number {
-    const limits = {
+    const limits: Record<string, number> = {
       free: 50,
       pro: 500,
       enterprise: 5000,
@@ -61,7 +61,7 @@ export class RateLimitGuard implements CanActivate {
   }
 
   private getRateLimitRpd(tier: string): number {
-    const limits = {
+    const limits: Record<string, number> = {
       free: 1000,
       pro: 50000,
       enterprise: 1000000,

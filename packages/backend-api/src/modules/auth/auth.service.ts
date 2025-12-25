@@ -58,7 +58,7 @@ export class AuthService {
     return this.generateTokens(user);
   }
 
-  async validateApiKey(keyHash: string): Promise<User> {
+  async validateApiKey(keyHash: string): Promise<User | null> {
     const apiKey = await this.apiKeyRepository.findOne({
       where: {
         key_hash: keyHash,

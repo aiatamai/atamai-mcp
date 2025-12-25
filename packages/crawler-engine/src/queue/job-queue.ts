@@ -27,7 +27,7 @@ export interface CrawlJobResult {
  * Manages crawler job scheduling, processing, and monitoring
  */
 export class JobQueueManager {
-  private queue: Queue<CrawlJobData>;
+  private queue!: Queue<CrawlJobData>;
   private redis: Redis;
   private workers: Map<string, Worker> = new Map();
 
@@ -110,9 +110,9 @@ export class JobQueueManager {
           const duration = Date.now() - startTime;
           console.log(`[Worker] Completed job ${job.id} in ${duration}ms`);
           return { ...result, duration };
-        } catch (error) {
+        } catch (error: any) {
           const duration = Date.now() - startTime;
-          console.error(`[Worker] Job ${job.id} failed:`, error.message);
+          console.error(`[Worker] Job ${job.id} failed:`, error?.message || 'Unknown error');
           throw error;
         }
       },
@@ -131,7 +131,9 @@ export class JobQueueManager {
     });
 
     worker.on('failed', (job, err) => {
-      console.error(`[Worker] Job ${job.id} failed:`, err.message);
+      if (job) {
+        console.error(`[Worker] Job ${job.id} failed:`, err?.message || 'Unknown error');
+      }
     });
 
     this.workers.set(processorName, worker);
@@ -150,7 +152,7 @@ export class JobQueueManager {
 
     return {
       state: await job.getState(),
-      progress: job.progress() || 0,
+      progress: (job.progress && typeof job.progress === 'function' ? job.progress() : job.progress) || 0,
       data: job.data,
     };
   }

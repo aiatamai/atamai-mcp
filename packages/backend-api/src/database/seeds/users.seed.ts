@@ -5,45 +5,45 @@
 
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
-import { User } from '../entities/user.entity';
+import { User, UserTier } from '../entities/user.entity';
 import { ApiKey } from '../entities/api-key.entity';
 
 export const testUsers = [
   {
     email: 'free@example.com',
     password: 'Password123!',
-    tier: 'free' as const,
+    tier: UserTier.FREE,
     name: 'Free User',
     description: 'Standard free tier user with limited API access',
   },
   {
     email: 'pro@example.com',
     password: 'Password123!',
-    tier: 'pro' as const,
+    tier: UserTier.PRO,
     name: 'Pro User',
     description: 'Pro tier user with enhanced API limits',
   },
   {
     email: 'enterprise@example.com',
     password: 'Password123!',
-    tier: 'enterprise' as const,
+    tier: UserTier.ENTERPRISE,
     name: 'Enterprise User',
     description: 'Enterprise tier user with unlimited API access',
   },
   {
     email: 'admin@example.com',
     password: 'Password123!',
-    tier: 'enterprise' as const,
+    tier: UserTier.ENTERPRISE,
     name: 'Admin User',
     description: 'Admin user with access to admin panel',
   },
 ];
 
-const getRateLimits = (tier: 'free' | 'pro' | 'enterprise') => {
+const getRateLimits = (tier: UserTier) => {
   const limits = {
-    free: { rpm: 50, rpd: 1000 },
-    pro: { rpm: 500, rpd: 50000 },
-    enterprise: { rpm: 5000, rpd: 1000000 },
+    [UserTier.FREE]: { rpm: 50, rpd: 1000 },
+    [UserTier.PRO]: { rpm: 500, rpd: 50000 },
+    [UserTier.ENTERPRISE]: { rpm: 5000, rpd: 1000000 },
   };
   return limits[tier];
 };
@@ -66,14 +66,13 @@ export async function seedUsers(dataSource: DataSource) {
           email: userData.email,
           password_hash: hashedPassword,
           tier: userData.tier,
-          name: userData.name,
         });
 
         user = await userRepo.save(user);
         console.log(`✅ Created user: ${userData.email} (${userData.tier})`);
 
         // Create default API key for non-free users
-        if (userData.tier !== 'free') {
+        if (userData.tier !== UserTier.FREE) {
           const limits = getRateLimits(userData.tier);
           const keyPrefix = `atm_live_${Math.random().toString(36).substring(2, 10)}`;
 

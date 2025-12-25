@@ -34,7 +34,7 @@ export class DocumentationService {
     const library = await this.librariesService.findByFullName(fullName);
 
     // Get version
-    let version: LibraryVersion;
+    let version: LibraryVersion | null;
     if (requestedVersion) {
       version = await this.libraryVersionRepository.findOne({
         where: {

@@ -24,8 +24,8 @@ export interface ExtractedContent {
  */
 export class GitHubCrawler {
   private octokit: Octokit;
-  private owner: string;
-  private repo: string;
+  private owner: string = '';
+  private repo: string = '';
 
   constructor(githubToken?: string) {
     this.octokit = new Octokit({
@@ -59,8 +59,8 @@ export class GitHubCrawler {
       });
       console.log(`[GitHubCrawler] Initialized for ${fullName}`);
       console.log(`[GitHubCrawler] Repository: ${repoData.full_name} (${repoData.stargazers_count} stars)`);
-    } catch (error) {
-      throw new Error(`Failed to initialize crawler for ${fullName}: ${error.message}`);
+    } catch (error: any) {
+      throw new Error(`Failed to initialize crawler for ${fullName}: ${error?.message || 'Unknown error'}`);
     }
   }
 
@@ -80,8 +80,8 @@ export class GitHubCrawler {
         content.readme = readme;
         if (job) job.updateProgress(10);
       }
-    } catch (error) {
-      console.warn(`[GitHubCrawler] Could not fetch README: ${error.message}`);
+    } catch (error: any) {
+      console.warn(`[GitHubCrawler] Could not fetch README: ${error?.message || 'Unknown error'}`);
     }
 
     // Get package.json
@@ -91,8 +91,8 @@ export class GitHubCrawler {
         content.packageJson = packageJson;
         if (job) job.updateProgress(20);
       }
-    } catch (error) {
-      console.warn(`[GitHubCrawler] Could not fetch package.json: ${error.message}`);
+    } catch (error: any) {
+      console.warn(`[GitHubCrawler] Could not fetch package.json: ${error?.message || 'Unknown error'}`);
     }
 
     // Extract documentation files
@@ -100,8 +100,8 @@ export class GitHubCrawler {
       const docFiles = await this.getDocumentationFiles();
       content.files.push(...docFiles);
       if (job) job.updateProgress(50);
-    } catch (error) {
-      console.warn(`[GitHubCrawler] Could not fetch documentation: ${error.message}`);
+    } catch (error: any) {
+      console.warn(`[GitHubCrawler] Could not fetch documentation: ${error?.message || 'Unknown error'}`);
     }
 
     // Extract example files
@@ -110,8 +110,8 @@ export class GitHubCrawler {
       content.files.push(...exampleFiles);
       content.exampleCount = exampleFiles.length;
       if (job) job.updateProgress(80);
-    } catch (error) {
-      console.warn(`[GitHubCrawler] Could not fetch examples: ${error.message}`);
+    } catch (error: any) {
+      console.warn(`[GitHubCrawler] Could not fetch examples: ${error?.message || 'Unknown error'}`);
     }
 
     if (job) job.updateProgress(100);
@@ -135,8 +135,8 @@ export class GitHubCrawler {
       // Handle BufferEncoding
       const buffer = Buffer.from(data.content, 'base64');
       return buffer.toString('utf-8');
-    } catch (error) {
-      if (error.status === 404) {
+    } catch (error: any) {
+      if (error?.status === 404) {
         return null;
       }
       throw error;
@@ -158,11 +158,15 @@ export class GitHubCrawler {
         return null;
       }
 
-      const buffer = Buffer.from(data.content, 'base64');
-      const content = buffer.toString('utf-8');
-      return JSON.parse(content);
-    } catch (error) {
-      if (error.status === 404) {
+      if (data.type === 'file' && data.content) {
+        const buffer = Buffer.from(data.content, 'base64');
+        const content = buffer.toString('utf-8');
+        return JSON.parse(content);
+      }
+
+      return null;
+    } catch (error: any) {
+      if (error?.status === 404) {
         return null;
       }
       throw error;
@@ -245,18 +249,18 @@ export class GitHubCrawler {
                 path: item.path,
               });
 
-              if (!Array.isArray(fileData)) {
+              if (!Array.isArray(fileData) && fileData.type === 'file' && fileData.content) {
                 const buffer = Buffer.from(fileData.content, 'base64');
                 files.push({
                   path: item.path,
                   type: 'file',
                   content: buffer.toString('utf-8'),
-                  url: fileData.html_url,
+                  url: fileData.html_url || undefined,
                 });
                 fileCount++;
               }
-            } catch (error) {
-              console.warn(`[GitHubCrawler] Failed to get file ${item.path}: ${error.message}`);
+            } catch (error: any) {
+              console.warn(`[GitHubCrawler] Failed to get file ${item.path}: ${error?.message || 'Unknown error'}`);
             }
           } else if (item.type === 'dir') {
             await traverse(item.path);
@@ -283,17 +287,17 @@ export class GitHubCrawler {
       });
 
       return tags
-        .map((tag) => {
+        .map((tag: any) => {
           // Clean version (remove 'v' prefix if present)
           return tag.name.replace(/^v/, '');
         })
-        .filter((version) => {
+        .filter((version: string) => {
           // Filter valid semver
           return /^\d+\.\d+\.\d+/.test(version);
         })
         .slice(0, 10); // Get latest 10 versions
-    } catch (error) {
-      console.warn(`[GitHubCrawler] Could not fetch versions: ${error.message}`);
+    } catch (error: any) {
+      console.warn(`[GitHubCrawler] Could not fetch versions: ${error?.message || 'Unknown error'}`);
       return [];
     }
   }
@@ -316,7 +320,7 @@ export class GitHubCrawler {
       const pagesCrawled = (content.files?.length || 0) + (content.readme ? 1 : 0);
 
       return {
-        jobId: job.id,
+        jobId: job.id || '',
         libraryId,
         status: 'completed',
         pagesCrawled,
@@ -324,14 +328,14 @@ export class GitHubCrawler {
         duration: Date.now() - startTime,
         timestamp: new Date(),
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
-        jobId: job.id,
+        jobId: job.id || '',
         libraryId,
         status: 'failed',
         pagesCrawled: 0,
         pagesIndexed: 0,
-        error: error.message,
+        error: error?.message || 'Unknown error',
         duration: Date.now() - startTime,
         timestamp: new Date(),
       };

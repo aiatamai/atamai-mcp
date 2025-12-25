@@ -1,5 +1,4 @@
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import { URL } from 'url';
 import { CrawlJobData, CrawlJobResult } from '../queue/job-queue';
 import { Job } from 'bullmq';
@@ -38,8 +37,8 @@ export class DocsScraper {
     try {
       const startUrl = new URL(this.baseUrl);
       await this.crawlPage(startUrl, pages, 0, job);
-    } catch (error) {
-      console.error(`[DocsScraper] Scraping failed: ${error.message}`);
+    } catch (error: any) {
+      console.error(`[DocsScraper] Scraping failed: ${error?.message || 'Unknown error'}`);
     }
 
     console.log(`[DocsScraper] Scraped ${pages.length} pages from ${this.baseUrl}`);
@@ -113,8 +112,8 @@ export class DocsScraper {
         if (pages.length >= this.maxPages) break;
         await this.crawlPage(link, pages, depth + 1, job);
       }
-    } catch (error) {
-      console.warn(`[DocsScraper] Failed to scrape ${urlString}: ${error.message}`);
+    } catch (error: any) {
+      console.warn(`[DocsScraper] Failed to scrape ${urlString}: ${error?.message || 'Unknown error'}`);
     }
   }
 
@@ -169,7 +168,7 @@ export class DocsScraper {
     const topics: Set<string> = new Set();
 
     // Extract from headings
-    $('h2, h3').each((_, el) => {
+    $('h2, h3').each((_: any, el: any) => {
       const text = $(el).text().trim().toLowerCase();
       if (text.length > 3 && text.length < 100) {
         topics.add(text);
@@ -179,7 +178,7 @@ export class DocsScraper {
     // Extract from meta keywords
     const keywords = $('meta[name="keywords"]').attr('content');
     if (keywords) {
-      keywords.split(',').forEach((kw) => {
+      keywords.split(',').forEach((kw: string) => {
         const trimmed = kw.trim().toLowerCase();
         if (trimmed.length > 3) {
           topics.add(trimmed);
@@ -197,7 +196,7 @@ export class DocsScraper {
     const links: URL[] = [];
     const baseHost = baseUrl.hostname;
 
-    $('a[href]').each((_, el) => {
+    $('a[href]').each((_: any, el: any) => {
       const href = $(el).attr('href');
       if (!href) return;
 
@@ -244,7 +243,7 @@ export class DocsScraper {
       const pages = await this.scrape(job);
 
       return {
-        jobId: job.id,
+        jobId: job.id || 'unknown',
         libraryId,
         status: 'completed',
         pagesCrawled: pages.length,
@@ -252,14 +251,14 @@ export class DocsScraper {
         duration: Date.now() - startTime,
         timestamp: new Date(),
       };
-    } catch (error) {
+    } catch (error: any) {
       return {
-        jobId: job.id,
+        jobId: job.id || 'unknown',
         libraryId,
         status: 'failed',
         pagesCrawled: 0,
         pagesIndexed: 0,
-        error: error.message,
+        error: error?.message || 'Unknown error',
         duration: Date.now() - startTime,
         timestamp: new Date(),
       };

@@ -6,9 +6,8 @@
 
 import { DataSource } from 'typeorm';
 import { Library } from '../entities/library.entity';
-import { LibraryVersion } from '../entities/library-version.entity';
-import { DocumentationPage } from '../entities/documentation-page.entity';
-import { CodeExample } from '../entities/code-example.entity';
+import { LibraryVersion, DocumentationStatus } from '../entities/library-version.entity';
+import { DocumentationPage, SourceType, ContentType, PageType } from '../entities/documentation-page.entity';
 
 export const librariesToSeed = [
   // JavaScript/TypeScript
@@ -225,13 +224,13 @@ export async function seedLibraries(dataSource: DataSource) {
     try {
       // Create library
       let library = await libraryRepo.findOne({
-        where: { fullName: libData.fullName },
+        where: { full_name: libData.fullName },
       });
 
       if (!library) {
         library = libraryRepo.create({
           name: libData.name,
-          fullName: libData.fullName,
+          full_name: libData.fullName,
           description: libData.description,
           ecosystem: libData.ecosystem as any,
           repository_url: libData.repositoryUrl,
@@ -259,7 +258,7 @@ export async function seedLibraries(dataSource: DataSource) {
             version: versionString,
             git_tag: `v${versionString}`,
             is_latest: versionString === libData.versions[0],
-            documentation_status: 'indexed',
+            documentation_status: DocumentationStatus.INDEXED,
             release_date: new Date(2023, 0, 1),
           });
 
@@ -299,13 +298,15 @@ export async function seedLibraries(dataSource: DataSource) {
           if (!existing) {
             const docPage = docPageRepo.create({
               library_version_id: version.id,
-              source_type: 'docs',
+              source_type: SourceType.OFFICIAL_DOCS,
               source_url: `https://docs.example.com/${libData.name}`,
               path: `/${docData.type}/${docData.title.toLowerCase().replace(/\s+/g, '-')}`,
               title: docData.title,
               content: docData.content,
-              content_type: 'markdown',
-              page_type: docData.type as any,
+              content_type: ContentType.MARKDOWN,
+              page_type: docData.type === 'guide' ? PageType.GUIDE :
+                         docData.type === 'reference' ? PageType.REFERENCE :
+                         PageType.EXAMPLE,
               topics: docData.topics,
               metadata: {
                 difficulty: 'beginner',

@@ -38,8 +38,17 @@ export class RateLimitingService {
 
     const results = await pipeline.exec();
 
-    const minuteCount = (results[0][1] as number) || 0;
-    const dayCount = (results[2][1] as number) || 0;
+    if (!results) {
+      return {
+        allowed: true,
+        remaining: limitRpm,
+        resetAt: new Date(),
+        limit: limitRpm,
+      };
+    }
+
+    const minuteCount = (results[0]?.[1] as number) || 0;
+    const dayCount = (results[2]?.[1] as number) || 0;
 
     // Determine which limit was hit (if any)
     const minuteExceeded = minuteCount > limitRpm;

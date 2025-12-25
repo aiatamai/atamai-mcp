@@ -49,6 +49,18 @@ export class MCPServer {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
+      if (!args) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Error: Missing arguments',
+              isError: true,
+            },
+          ],
+        };
+      }
+
       try {
         if (name === 'resolve-library-id') {
           const libraryName = args.libraryName as string;

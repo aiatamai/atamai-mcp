@@ -3,22 +3,28 @@ import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkFrontmatter from 'remark-frontmatter';
-import { Root, Heading, Paragraph, Code, CodeBlock } from 'mdast';
-
-export interface ParsedMarkdown {
-  title?: string;
-  description?: string;
-  content: string;
-  headings: Heading[];
-  codeBlocks: CodeBlock[];
-  topics: string[];
-  frontmatter?: Record<string, unknown>;
-}
 
 export interface ParsedHeading {
   level: number;
   text: string;
   slug: string;
+}
+
+export interface ParsedCodeBlock {
+  language: string;
+  code: string;
+  meta?: string;
+  context?: string;
+}
+
+export interface ParsedMarkdown {
+  title?: string;
+  description?: string;
+  content: string;
+  headings: ParsedHeading[];
+  codeBlocks: ParsedCodeBlock[];
+  topics: string[];
+  frontmatter?: Record<string, unknown>;
 }
 
 /**
@@ -35,14 +41,14 @@ export class MarkdownParser {
    * Parse markdown content
    */
   parse(content: string): ParsedMarkdown {
-    const ast = this.processor.parse(content) as Root;
+    const ast = this.processor.parse(content) as any;
     const tree = this.processor.runSync(ast);
 
-    const headings = this.extractHeadings(tree as Root);
-    const codeBlocks = this.extractCodeBlocks(tree as Root);
+    const headings = this.extractHeadings(tree);
+    const codeBlocks = this.extractCodeBlocks(tree);
     const topics = this.extractTopics(headings);
     const title = headings[0]?.text;
-    const description = this.extractDescription(tree as Root);
+    const description = this.extractDescription(tree);
 
     return {
       title,
@@ -57,8 +63,8 @@ export class MarkdownParser {
   /**
    * Extract all headings from markdown
    */
-  private extractHeadings(tree: Root): Heading[] {
-    const headings: Heading[] = [];
+  private extractHeadings(tree: any): ParsedHeading[] {
+    const headings: ParsedHeading[] = [];
 
     const traverse = (node: any) => {
       if (node.type === 'heading') {
@@ -67,7 +73,7 @@ export class MarkdownParser {
           level: node.depth,
           text,
           slug: this.slugify(text),
-        } as Heading);
+        });
       }
 
       if (node.children) {
@@ -82,8 +88,8 @@ export class MarkdownParser {
   /**
    * Extract all code blocks from markdown
    */
-  private extractCodeBlocks(tree: Root): CodeBlock[] {
-    const blocks: CodeBlock[] = [];
+  private extractCodeBlocks(tree: any): ParsedCodeBlock[] {
+    const blocks: ParsedCodeBlock[] = [];
 
     const traverse = (node: any, context: string = '') => {
       if (node.type === 'code') {
@@ -92,7 +98,7 @@ export class MarkdownParser {
           code: node.value,
           meta: node.meta,
           context,
-        } as CodeBlock);
+        });
       }
 
       if (node.children) {
@@ -107,7 +113,7 @@ export class MarkdownParser {
   /**
    * Extract description (first paragraph)
    */
-  private extractDescription(tree: Root): string | undefined {
+  private extractDescription(tree: any): string | undefined {
     let foundHeading = false;
 
     for (const node of tree.children) {
@@ -117,7 +123,7 @@ export class MarkdownParser {
       }
 
       if (foundHeading && node.type === 'paragraph') {
-        return this.extractNodeText(node as Paragraph);
+        return this.extractNodeText(node);
       }
     }
 
@@ -127,7 +133,7 @@ export class MarkdownParser {
   /**
    * Extract topics from headings
    */
-  private extractTopics(headings: Heading[]): string[] {
+  private extractTopics(headings: ParsedHeading[]): string[] {
     return headings
       .filter((h) => h.level <= 3)
       .map((h) => h.text.toLowerCase())
@@ -238,23 +244,5 @@ export class MarkdownParser {
     }
 
     return toc;
-  }
-}
-
-// Type extensions for mdast
-declare global {
-  namespace Mdast {
-    interface Heading {
-      level: number;
-      text: string;
-      slug: string;
-    }
-
-    interface CodeBlock {
-      language: string;
-      code: string;
-      meta?: string;
-      context?: string;
-    }
   }
 }

@@ -13,7 +13,9 @@ import { getJwtConfig } from '../../config/jwt.config';
   imports: [
     TypeOrmModule.forFeature([User, ApiKey]),
     PassportModule,
-    JwtModule.register(getJwtConfig()),
+    JwtModule.registerAsync({
+      useFactory: () => getJwtConfig(),
+    }),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

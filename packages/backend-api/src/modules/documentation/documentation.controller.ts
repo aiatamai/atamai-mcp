@@ -10,7 +10,7 @@ export class DocumentationController {
 
   @Post('resolve')
   @ApiOperation({ summary: 'Resolve library ID from name' })
-  async resolveLibrary(@Body() body: { libraryName: string }) {
+  async resolveLibrary(@Body() _body: { libraryName: string }) {
     // This will be implemented in the MCP server
     // For now, just return placeholder
     return { message: 'Resolve library endpoint' };
