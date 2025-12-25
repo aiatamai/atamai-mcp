@@ -16,7 +16,7 @@ COPY packages/backend-api ./packages/backend-api
 COPY tsconfig.json .
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Build
 WORKDIR /app/packages/backend-api
@@ -40,7 +40,7 @@ COPY packages/backend-api ./packages/backend-api
 COPY tsconfig.json .
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod
 
 # Copy built application
 COPY --from=builder /app/packages/backend-api/dist ./packages/backend-api/dist

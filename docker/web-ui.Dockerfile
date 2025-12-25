@@ -16,7 +16,7 @@ COPY packages/web-ui ./packages/web-ui
 COPY tsconfig.json .
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Build
 WORKDIR /app/packages/web-ui
@@ -40,7 +40,7 @@ COPY packages/web-ui ./packages/web-ui
 COPY tsconfig.json .
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod
 
 # Copy built application and public assets
 COPY --from=builder /app/packages/web-ui/.next ./packages/web-ui/.next

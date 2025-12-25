@@ -16,7 +16,7 @@ COPY packages/crawler-engine ./packages/crawler-engine
 COPY tsconfig.json .
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Build
 WORKDIR /app/packages/crawler-engine
@@ -47,7 +47,7 @@ COPY packages/crawler-engine ./packages/crawler-engine
 COPY tsconfig.json .
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod
 
 # Copy built application
 COPY --from=builder /app/packages/crawler-engine/dist ./packages/crawler-engine/dist

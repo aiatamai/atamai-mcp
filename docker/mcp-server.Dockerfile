@@ -16,7 +16,7 @@ COPY packages/mcp-server ./packages/mcp-server
 COPY tsconfig.json .
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Build
 WORKDIR /app/packages/mcp-server
@@ -40,7 +40,7 @@ COPY packages/mcp-server ./packages/mcp-server
 COPY tsconfig.json .
 
 # Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm install --prod
 
 # Copy built application
 COPY --from=builder /app/packages/mcp-server/dist ./packages/mcp-server/dist
